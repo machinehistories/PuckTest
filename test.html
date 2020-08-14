@@ -14,6 +14,7 @@
       console.log("Received JSON: ",j);
      // elements.light.setValue(j.light*100);
      elements.bat.setValue(j.bat);
+     //elements.temp.setData(j);
     } catch(e) {
       console.log("Received: ",line);
     }
@@ -36,11 +37,11 @@
       elements.modal.remove();
       // update the controls with the values we received
       var buf = "";
-      elements.bat.setValue(c.bat);
+     // elements.bat.setValue(c.bat);
       // now get the history - these could take a while
       // so we do it separately.
      // Puck.eval("history", function(d) {
-        elements.temp.setData(c);
+        //elements.temp.setData(c);
    //   });
   //  });
 //  }
