@@ -1,46 +1,124 @@
 <html>
  <head>
-  <title>Dashboard</title>
-  <meta name="viewport" content="width=620, initial-scale=1">
+   <meta name="viewport" content="width=640, initial-scale=1">
  </head>
- <body style="width:620px;height:450px">
-  <link href="https://espruino.github.io/TinyDash/tinydash.css" rel="stylesheet">
-  <script src="https://espruino.github.io/TinyDash/tinydash.js"></script>
-  <script src="https://www.puck-js.com/puck.js"></script>  
-  <script>
-  function connectDevice() {
-    // connect, and ask for the battery percentage
-   // Puck.eval("{bat:Puck.getBatteryPercentage()}", function(d,err) {
-     // if (!d) {
-     //   alert("Web Bluetooth connection failed!\n"+(err||""));
-     //   return;
-   //   }
-      // remove the 'connect' window
-      elements.modal.remove();
-      // update the controls with the values we received
- //     elements.bat.setValue(d.bat);
-      // now get the history - these could take a while
-      // so we do it separately.
-//      Puck.eval("history", function(d) {
-    //    elements.temp.setData(d);       
-  //   });
-//    });
+ <body>
+   <link href="/static/css/tinydash.css" rel="stylesheet">
+   <script src="/static/tinydash.js"></script>
+   <script src="/static/puck.js"></script>
+   <script>
+
+
+  function onLine(line) {
+    try {
+      var j = JSON.parse(line);
+      console.log("Received JSON: ",j);
+      //getTempValue();
+      elements.light.setValue(j.light*100);
+    //  elements.logg.setText(j.mag*10);
+    } catch(e) {
+      console.log("Received: ",line);
+    }
   }
+  var connection;
+  function connectDevice() {
+    Puck.connect(function(c) {
+      if (!c) {
+        alert("Couldn't connect!");
+        return;
+      }
+      connection = c;
+      // remove modal window
+      elements.modal.remove();
+      // Handle the data we get back, and call 'onLine'
+      // whenever we get a line
+      var buf = "";
+      connection.on("data", function(d) {
+        elements.log.log(40*Math.sin(Date.now()/1000)+50);
+        
+        //elements.logg.log(connection.write("digitalRead(BTN);\n")); 
+      //  elements.gr.graph.setData(40*Math.sin(Date.now()/1000)+50);
+        buf += d;
+        var i = buf.indexOf("\n");
+        while (i>=0) {
+          onLine(buf.substr(0,i));
+          buf = buf.substr(i+1);
+          i = buf.indexOf("\n");
+        }
+      });
+      // First, reset Puck.js
+      connection.write("reset();\n", function() {
+        // Wait for it to reset itself
+        setTimeout(function() {
+          // Now tell it to write data on the current light level to Bluetooth
+          // 10 times a second. Also ensure that when disconnected, Puck.js
+          // resets so the setInterval doesn't keep draining battery.
+          //TD.update({log : 40*Math.sin(Date.now()/1000)+50});
+          connection.write("setInterval(function(){Bluetooth.println(JSON.stringify({light:Puck.light()}));},100);NRF.on('disconnect', function() {reset()});\n",
+            function() { console.log("Ready..."); });
+          }, 1500);
+        });
+      });
+
+  }
+  
+  
+     
+ 
+  var t = [];
+  for (var i=0;i<100;i++) t.push(i);
+  //function getTempValue() {
+   // for (var i=0;i<100;i++) t.push(i);
+    //connection.write("Puck.temp();\n", function(temper){
+    //for (var i=0; i<100;i++) t.push(temper);
+      //    elements.gr.setValue(t);
+      // elements.gr.setData(40*Math.sin(Date.now()/1000)+50);
+       //{elements.log.log(t);}
+            // elements.gr.setData(j.light*100);
+       //for (var i=0;i<100;i++) t.push(j.light*100);
+     //  setTimeout(function() {
+      // getTempValue();
+       
+   //  }, 250);
+  //  });
+ // }
+
   // Set up the controls we see on the screen    
   var elements = {
-    heading : TD.label({x:10,y:10,width:190,height:50,label:"My Dashboard"}),
-    bat : TD.gauge({x:10,y:70,width:190,height:220,label:"Battery Level",value:0,min:0,max:100}),
-    temp : TD.graph({x:210,y:10,width:400,height:180,label:"Temperature"}),
+    heading : TD.label({x:10,y:10,width:200,height:50,label:"My Dashboard"}),
+    b:TD.button({x:10,y:290,width:200,height:100,label:"Press Me",value:0,name:"button",onchange:function(e){elements.log.log("Pressed!");}}),
+    log:TD.log({x:430,y:10,width:190,height:200,label:"A Log",text:"A\nB\nC"}),
+    logg:TD.log({x:630,y:10,width:190,height:200,label:"A Log",text:"A\nB\nC"}),
+    //function() {
+      //  connection.write("Puck.getBatteryPercentage();\n");
+    //elements.logg.log(connection.write("Puck.getBatteryPercentage();\n"));
+    //Puck.eval("{bat:Puck.getBatteryPercentage()}"
+  //  }}),
+    light : TD.gauge({x:10,y:70,width:200,height:220,label:"Light",value:0,min:0,max:100}),
+    //redled : TD.toggle({x:210,y:200,width:200,height:90,label:"Red LED",value:0,onchange:function(el,v) {
+    //  Puck.write("LED1.write("+v+");\n");
+    //}}),
     redled : TD.toggle({x:210,y:200,width:200,height:90,label:"Red LED",value:0,onchange:function(el,v) {
-      Puck.write("LED1.write("+v+");\n");
+      connection.write("LED1.write("+v+");\n");
     }}),
-    flash : TD.button({x:420,y:200,width:190,height:90,label:"Flash!",onchange:function(){
-      Puck.write("digitalPulse(LED3,1,500);\n");
+    //flash : TD.button({x:420,y:200,width:190,height:90,label:"Flash!",onchange:"Bluetooth.println('LED1.set();\n');"
+   // }),
+   flash : TD.button({x:420,y:200,width:190,height:90,label:"Flash!",value:0,onchange:function() { 
+      connection.write("digitalPulse(LED3, 1, 500);\n");
     }}),
-    modal: TD.modal({x:10,y:10,width:600,height:430,label:"Click to connect",onchange:connectDevice})
+    vs:TD.value({x:10,y:400,width:200,height:60,label:"Steppable Value",value:"1.2",min:1,step:0.1,max:2}),
+   // gr:TD.graph({x:220,y:420,width:400,height:170,label:"A Graph",data:function(){
+  //  connection.write("Puck.temp();\n");}}),
+    gr:TD.graph({x:220,y:420,width:400,height:170,label:"A Graph",data:"1"}),
+    //function() {
+    //connection.write("Puck.temp();\n");
+   // }}),
+    modal: TD.modal({x:10,y:10,width:190,height:430,label:"Click to connect",onchange:connectDevice})
   }
-  for (var i in elements)
-    document.body.appendChild(elements[i]);
+  
+  elements.log.log("Hello");
+     for (var i in elements) document.body.appendChild(elements[i]);
+     
   </script>
  </body>
 </html>
