@@ -7,15 +7,21 @@
    <script src="/static/tinydash.js"></script>
    <script src="/static/puck.js"></script>
    <script>
-
-
+var t;
+var j_light;
+t = [];
   function onLine(line) {
     try {
+    
+  
       var j = JSON.parse(line);
       console.log("Received JSON: ",j);
-      //getTempValue();
-      elements.light.setValue(j.light*100);
-    //  elements.logg.setText(j.mag*10);
+      j_light = j.light*100;
+      t.push(j_light);
+      elements.light.setValue(j_light);
+      elements.logg.log(j_light);
+      elements.gr.setData(t);
+    
     } catch(e) {
       console.log("Received: ",line);
     }
@@ -34,10 +40,8 @@
       // whenever we get a line
       var buf = "";
       connection.on("data", function(d) {
-        elements.log.log(40*Math.sin(Date.now()/1000)+50);
-        
+        elements.log.log(40*Math.sin(Date.now()/1000)+50);        
         //elements.logg.log(connection.write("digitalRead(BTN);\n")); 
-      //  elements.gr.graph.setData(40*Math.sin(Date.now()/1000)+50);
         buf += d;
         var i = buf.indexOf("\n");
         while (i>=0) {
@@ -59,26 +63,14 @@
           }, 1500);
         });
       });
-
-  }
-  
-  
-     
- 
-  var t = [];
-  for (var i=0;i<100;i++) t.push(i);
+  }  
   //function getTempValue() {
    // for (var i=0;i<100;i++) t.push(i);
     //connection.write("Puck.temp();\n", function(temper){
     //for (var i=0; i<100;i++) t.push(temper);
-      //    elements.gr.setValue(t);
-      // elements.gr.setData(40*Math.sin(Date.now()/1000)+50);
-       //{elements.log.log(t);}
-            // elements.gr.setData(j.light*100);
-       //for (var i=0;i<100;i++) t.push(j.light*100);
+      //    {elements.gr.setData(t);}
      //  setTimeout(function() {
-      // getTempValue();
-       
+      // getTempValue();     
    //  }, 250);
   //  });
  // }
@@ -95,24 +87,16 @@
     //Puck.eval("{bat:Puck.getBatteryPercentage()}"
   //  }}),
     light : TD.gauge({x:10,y:70,width:200,height:220,label:"Light",value:0,min:0,max:100}),
-    //redled : TD.toggle({x:210,y:200,width:200,height:90,label:"Red LED",value:0,onchange:function(el,v) {
-    //  Puck.write("LED1.write("+v+");\n");
-    //}}),
     redled : TD.toggle({x:210,y:200,width:200,height:90,label:"Red LED",value:0,onchange:function(el,v) {
       connection.write("LED1.write("+v+");\n");
     }}),
-    //flash : TD.button({x:420,y:200,width:190,height:90,label:"Flash!",onchange:"Bluetooth.println('LED1.set();\n');"
-   // }),
    flash : TD.button({x:420,y:200,width:190,height:90,label:"Flash!",value:0,onchange:function() { 
       connection.write("digitalPulse(LED3, 1, 500);\n");
     }}),
     vs:TD.value({x:10,y:400,width:200,height:60,label:"Steppable Value",value:"1.2",min:1,step:0.1,max:2}),
    // gr:TD.graph({x:220,y:420,width:400,height:170,label:"A Graph",data:function(){
   //  connection.write("Puck.temp();\n");}}),
-    gr:TD.graph({x:220,y:420,width:400,height:170,label:"A Graph",data:"1"}),
-    //function() {
-    //connection.write("Puck.temp();\n");
-   // }}),
+    gr:TD.graph({x:220,y:420,width:400,height:170,label:"A Graph",data:t}),
     modal: TD.modal({x:10,y:10,width:190,height:430,label:"Click to connect",onchange:connectDevice})
   }
   
