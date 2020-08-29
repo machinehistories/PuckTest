@@ -3,9 +3,9 @@
    <meta name="viewport" content="width=640, initial-scale=1">
  </head>
  <body>
-   <link href="/static/css/tinydash.css" rel="stylesheet">
-   <script src="/static/tinydash.js"></script>
-   <script src="/static/puck.js"></script>
+  <link href="https://espruino.github.io/TinyDash/tinydash.css" rel="stylesheet">
+  <script src="https://espruino.github.io/TinyDash/tinydash.js"></script>
+  <script src="https://www.puck-js.com/puck.js"></script>  
    <script>
 var t;
 var j_light;
@@ -13,14 +13,28 @@ t = [];
   function onLine(line) {
     try {
     
-  
       var j = JSON.parse(line);
-      console.log("Received JSON: ",j);
-      j_light = j.light*100;
-      t.push(j_light);
-      elements.light.setValue(j_light);
-      elements.logg.log(j_light);
+     console.log(j.light);
+     console.log(j.temp);
+      var j = JSON.parse(line, function (key, value) {
+        //console.log("Received JSON: ",j);
+      if (key == "light") {
+    j_light = value*100;
+    console.log(j_light);
+    t.push(j.light);
+      elements.light.setValue(j.light);
+      elements.logg.log(j.light);
       elements.gr.setData(t);
+  } else if (key == "temp"){
+    j_temp = value;
+    elements.log.log(j.temp);
+  }    
+    
+    });
+  
+      
+      
+      
     
     } catch(e) {
       console.log("Received: ",line);
@@ -40,7 +54,7 @@ t = [];
       // whenever we get a line
       var buf = "";
       connection.on("data", function(d) {
-        elements.log.log(40*Math.sin(Date.now()/1000)+50);        
+        //elements.log.log(40*Math.sin(Date.now()/1000)+50);        
         //elements.logg.log(connection.write("digitalRead(BTN);\n")); 
         buf += d;
         var i = buf.indexOf("\n");
@@ -62,6 +76,10 @@ t = [];
             function() { console.log("Ready..."); });
           }, 1500);
         });
+        setTimeout(function() {
+        connection.write("setInterval(function(){Bluetooth.println(JSON.stringify({temp:Puck.getTemperature()}));},100);NRF.on('disconnect', function() {reset()});\n",
+            function() { console.log("Ready..."); });
+          }, 1500);
       });
   }  
   //function getTempValue() {
@@ -80,7 +98,7 @@ t = [];
     heading : TD.label({x:10,y:10,width:200,height:50,label:"My Dashboard"}),
     b:TD.button({x:10,y:290,width:200,height:100,label:"Press Me",value:0,name:"button",onchange:function(e){elements.log.log("Pressed!");}}),
     log:TD.log({x:430,y:10,width:190,height:200,label:"A Log",text:"A\nB\nC"}),
-    logg:TD.log({x:630,y:10,width:190,height:200,label:"A Log",text:"A\nB\nC"}),
+    logg:TD.log({x:630,y:10,width:190,height:200,label:"B Log",text:"A\nB\nC"}),
     //function() {
       //  connection.write("Puck.getBatteryPercentage();\n");
     //elements.logg.log(connection.write("Puck.getBatteryPercentage();\n"));
@@ -93,9 +111,9 @@ t = [];
    flash : TD.button({x:420,y:200,width:190,height:90,label:"Flash!",value:0,onchange:function() { 
       connection.write("digitalPulse(LED3, 1, 500);\n");
     }}),
-    vs:TD.value({x:10,y:400,width:200,height:60,label:"Steppable Value",value:"1.2",min:1,step:0.1,max:2}),
-   // gr:TD.graph({x:220,y:420,width:400,height:170,label:"A Graph",data:function(){
-  //  connection.write("Puck.temp();\n");}}),
+    vs:TD.value({x:10,y:400,width:200,height:60,label:"Steppable Value",value:"1.2",min:1,step:0.1,max:2,onchange:function(el)
+    {var val = el.getElementsByClassName("td_val_a")[0].innerHTML;
+     elements.log.log(val);}}),
     gr:TD.graph({x:220,y:420,width:400,height:170,label:"A Graph",data:t}),
     modal: TD.modal({x:10,y:10,width:190,height:430,label:"Click to connect",onchange:connectDevice})
   }
